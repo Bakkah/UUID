@@ -1,4 +1,4 @@
 UUID
 ====
 
-Simple and fast class for uuid generation
+Simple class for peseudo random uuid generation. 
