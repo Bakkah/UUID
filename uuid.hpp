@@ -1,55 +1,78 @@
-#ifndef UUID_HPP_
-#define UUID_HPP_
 
+#ifndef UTILITY_UUID_HPP_
+#define UTILITY_UUID_HPP_
+
+#include <array>
 #include <string>
+#include <cinttypes>
 #include <random>
 #include <chrono>
-#include <array>
-#include <sstream>
-#include <iomanip>
+#include "hexchars.hpp"
 
-namespace UUID {
+namespace Utility {
+
+using UUIDBytes = std::array<std::int32_t, 16>;
+using UUIDString = std::array<char, 37>;
 
 class UUID final {
 public:
-  UUID()
-        : bytes_({0}) {
+	UUID()
+	: bytes_({0}) {
 
-        }
-        ~UUID() {
+	}
+	UUID(const UUIDBytes &bytes)
+	: bytes_(bytes) {
 
-        }
-        std::string to_string() const {
-        	std::ostringstream oss;
-        	for(auto i = 0; i < 16; ++i) {
-        		oss << std::setw(2) << std::setfill('0') << std::hex << ((std::uint32_t)bytes_[i]);
-        		if(i == 3 or i == 5 or i == 7 or i == 9)
-        		        oss << "-";
-        	}
-            return oss.str();
-        }
-        static UUID random() {
-                UUID uuid;
-                auto seed = std::chrono::system_clock::now().time_since_epoch().count();
-                std::default_random_engine random_engine(seed);
-                std::uniform_int_distribution<uint8_t> random_bits(0,255);
-                for(int i = 0; i < 16; ++i) {
-                	uuid.bytes_[i] = random_bits(random_engine);
-                }
+	}
+	void set(const UUIDBytes &bytes) {
+		bytes_ = bytes;
+	}
+	template<HexCharType Type = HexCharType::Lower>
+	UUIDString to_string() const {
+		UUIDString str{"00000000-0000-0000-0000-000000000000"};
+		constexpr std::int32_t string_indexes[]{0,2,4,6,9,11,14,16,19,21,24,26,28,30,32,34};
+		for(std::int32_t i = 0; i < 16; ++i) {
+			auto string_index = string_indexes[i];
+			std::int32_t dec = bytes_[i];
+			str[string_index] = HexCharacters<Type>::chars[(dec >> 4)&(0xF)];
+			str[string_index+1] = HexCharacters<Type>::chars[(dec & 0xF)];
+		}
+		return str;
+	}
+	UUIDBytes bytes() const {
+		return bytes_;
+	}
+	bool compare(const UUID &other) const {
+		for(std::int32_t i = 0; i < 16; ++i) {
+			if(bytes_[i] not_eq other.bytes_[i])
+				return false;
+		}
+		return true;
+	}
+	bool operator==(const UUID &other) const {
+		return compare(other);
+	}
+	static UUID random() {
+		static std::mt19937 random_engine(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+		std::uniform_int_distribution<std::int32_t> bits(0,255);
+		UUIDBytes bytes;
+		for(std::int32_t i = 0; i < 16; ++i) {
+			bytes[i] = bits(random_engine);
+		}
 
-                uuid.bytes_[6] &= 0x0F; // clear version
-                uuid.bytes_[6] |= 0x40; // set version
-                uuid.bytes_[8] &= 0x3F; // clear variant
-                uuid.bytes_[8] |= 0x80; // set variant
-           return uuid;
-        }
-        std::array<unsigned char,16> bytes() const {
-        	return bytes_;
-        }
+        bytes[6] &= 0x0F; // clear version
+        bytes[6] |= 0x40; // set version 4
+
+        bytes[8] &= 0x3F; // clear variant
+        bytes[8] |= 0x80; // set variant current
+
+		return bytes;
+	}
 private:
-        std::array<unsigned char,16> bytes_;
+	UUIDBytes bytes_;
 };
+
 }
 
 
-#endif /* UUID_HPP_ */
+#endif /* UTILITY_UUID_HPP_ */
