@@ -42,7 +42,7 @@ public:
 			auto index = string_index[i];
 			s[0] = uuid.at(index);
 			s[1] = uuid.at(index+1);
-			bytes_.at(i) = (int)std::strtol(s,nullptr,16);
+			bytes_.at(i) = (std::int32_t)std::strtol(s,nullptr,16);
 		}
 	}
 	template<HexCharType Type = HexCharType::Lower>
