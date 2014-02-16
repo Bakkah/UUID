@@ -1,4 +1,3 @@
-
 #ifndef UTILITY_UUID_HPP_
 #define UTILITY_UUID_HPP_
 
@@ -24,13 +23,36 @@ public:
 	: bytes_(bytes) {
 
 	}
+	UUID(const std::string &str) {
+		set(str);
+	}
+	static UUID from_string(const std::string &str) {
+		return UUID(str);
+	}
+	static UUID from_bytes(const UUIDBytes &bytes) {
+		return UUID(bytes);
+	}
 	void set(const UUIDBytes &bytes) {
 		bytes_ = bytes;
 	}
+	void set(const std::string &uuid) {
+		char s[2] = {0};
+		constexpr int string_index[] = {0,2,4,6,9,11,14,16,19,21,24,26,28,30,32,34};
+		for(size_t i = 0; i < 16; ++i) {
+			auto index = string_index[i];
+			s[0] = uuid.at(index);
+			s[1] = uuid.at(index+1);
+			bytes_.at(i) = (int)std::strtol(s,nullptr,16);
+		}
+	}
 	template<HexCharType Type = HexCharType::Lower>
-	UUIDString to_string() const {
+	std::string to_string() const {
+		return c_str().data();
+	}
+	template<HexCharType Type = HexCharType::Lower>
+	UUIDString c_str() const {
 		UUIDString str{"00000000-0000-0000-0000-000000000000"};
-		constexpr std::int32_t string_indexes[]{0,2,4,6,9,11,14,16,19,21,24,26,28,30,32,34};
+		constexpr int string_indexes[]{0,2,4,6,9,11,14,16,19,21,24,26,28,30,32,34};
 		for(std::int32_t i = 0; i < 16; ++i) {
 			auto string_index = string_indexes[i];
 			std::int32_t dec = bytes_[i];
